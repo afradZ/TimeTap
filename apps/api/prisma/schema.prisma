@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // local dev
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  // role values: CUSTOMER | PROVIDER | ADMIN
+  role      String    @default("CUSTOMER")
+  name      String
+  email     String    @unique
+  phone     String?
+  tz        String    @default("Africa/Casablanca")
+  password  String
+  provider  Provider?
+  bookings  Booking[] @relation("CustomerBookings")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Provider {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id])
+  userId     String          @unique
+  display    String
+  bio        String?
+  address    String?
+  lat        Float?
+  lng        Float?
+  // status values: PENDING | APPROVED | SUSPENDED
+  status     String          @default("PENDING")
+  services   Service[]
+  rules      ScheduleRule[]
+  exceptions ExceptionRule[]
+  resources  Resource[]
+  bookings   Booking[]       @relation("ProviderBookings")
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  provider     Provider  @relation(fields: [providerId], references: [id])
+  providerId   String
+  name         String
+  duration     Int
+  priceCents   Int
+  bufferBefore Int       @default(0)
+  bufferAfter  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  Booking      Booking[]
+}
+
+model ScheduleRule {
+  id         String   @id @default(cuid())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId String
+  weekday    Int
+  startMin   Int
+  endMin     Int
+  capacity   Int      @default(1)
+}
+
+model ExceptionRule {
+  id         String   @id @default(cuid())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId String
+  date       DateTime
+  startMin   Int?
+  endMin     Int?
+  // type values: CLOSE | OPEN
+  type       String
+}
+
+model Resource {
+  id         String   @id @default(cuid())
+  provider   Provider @relation(fields: [providerId], references: [id])
+  providerId String
+  name       String
+  capacity   Int      @default(1)
+}
+
+model Booking {
+  id           String   @id @default(cuid())
+  customer     User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  customerId   String
+  provider     Provider @relation("ProviderBookings", fields: [providerId], references: [id])
+  providerId   String
+  service      Service  @relation(fields: [serviceId], references: [id])
+  serviceId    String
+  startTs      DateTime
+  endTs        DateTime
+  tzSnapshot   String
+  // status values: PENDING | CONFIRMED | CANCELLED | COMPLETED
+  status       String   @default("PENDING")
+  priceCents   Int
+  depositCents Int      @default(0)
+  payment      Payment?
+  review       Review?
+  createdAt    DateTime @default(now())
+
+  @@index([providerId, startTs, endTs])
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  booking      Booking  @relation(fields: [bookingId], references: [id])
+  bookingId    String   @unique
+  amountCents  Int
+  status       String
+  processorRef String?
+  createdAt    DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId String   @unique
+  rating    Int
+  text      String?
+  createdAt DateTime @default(now())
+}

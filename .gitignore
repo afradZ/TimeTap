@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# env and secrets
+*.env
+apps/api/.env
+apps/web/.env
+
+# build output
+dist/
+.next/
+out/
+
+# prisma and db
+apps/api/dev.db
+*.db
+*.db-journal
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editors and OS
+.DS_Store
+.vscode/
+.idea/
